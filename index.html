@@ -4,15 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lieferkarte Deutschland</title>
-  <link rel="stylesheet" href="style.css"/>
+
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <!-- Eigenes CSS -->
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <h2>Lieferadresse automatisch erkennen</h2>
   <input type="file" id="pdfInput" accept="application/pdf"/>
+
   <div id="map"></div>
+
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- PDF.js -->
   <script src="https://unpkg.com/pdfjs-dist/build/pdf.min.js"></script>
+  <!-- Eigenes JS -->
   <script src="app.js"></script>
 </body>
 </html>
