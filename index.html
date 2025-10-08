@@ -3,30 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Offene Aufträge – Deutschlandkarte</title>
+  <title>Offene Aufträge – Karte Deutschland</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-  <!-- Eigenes CSS -->
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      background: #2a72d4;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      margin: 0;
+    }
+    #map {
+      width: 100%;
+      height: calc(100% - 60px); /* Rest des Fensters nach Überschrift */
+    }
+  </style>
 </head>
 <body>
   <h1>Offene Aufträge</h1>
-  <p>Bitte PDF auswählen und mit „OK“ bestätigen. Lieferadresse und ZRD werden automatisch erkannt.</p>
-
-  <div id="upload-section">
-    <input type="file" id="pdfInput" accept="application/pdf" />
-    <button id="uploadBtn">OK</button>
-  </div>
-
   <div id="map"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <!-- PDF.js -->
-  <script src="https://unpkg.com/pdfjs-dist/build/pdf.min.js"></script>
-  <!-- Eigene JS -->
-  <script src="app.js"></script>
+  <script>
+    // Karte erstellen
+    const map = L.map('map').setView([51.1657, 10.4515], 6);
+
+    // Standard-OpenStreetMap-Layer mit Städtenamen
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap-Mitwirkende'
+    }).addTo(map);
+
+    // Beispiel-Marker in Berlin
+    L.marker([52.5200, 13.4050]).addTo(map)
+      .bindPopup('<b>Beispielmarker</b><br>Berlin')
+      .openPopup();
+  </script>
 </body>
 </html>
