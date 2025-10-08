@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Offene Aufträge – Lieferkarte Deutschland</title>
+  <title>Offene Aufträge – Deutschlandkarte</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
+  <!-- Eigenes CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>Offene Aufträge</h1>
-  <p>Lade hier deinen digitalen Auftrag (PDF) hoch. Lieferadresse und ZRD werden automatisch erkannt.</p>
+  <p>Bitte PDF auswählen und mit „OK“ bestätigen. Lieferadresse und ZRD werden automatisch erkannt.</p>
 
   <div id="upload-section">
     <input type="file" id="pdfInput" accept="application/pdf" />
@@ -23,10 +24,9 @@
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
   <!-- PDF.js -->
   <script src="https://unpkg.com/pdfjs-dist/build/pdf.min.js"></script>
-
+  <!-- Eigene JS -->
   <script src="app.js"></script>
 </body>
 </html>
