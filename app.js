@@ -1,16 +1,11 @@
-// Prüfen, ob PDF.js vorhanden ist
-if (typeof pdfjsLib === 'undefined') {
-  alert("PDF.js konnte nicht geladen werden. Bitte Internetverbindung prüfen.");
-}
-
-// Safari iPad Fix – Worker deaktivieren
+// Safari/iPad Fix: Worker deaktivieren
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js';
 pdfjsLib.disableWorker = true;
 
-// Leaflet-Karte (Deutschland)
+// Leaflet-Karte
 const map = L.map('map').setView([51.1657, 10.4515], 6);
 
-// Satellitenkarte mit Beschriftung
+// Satellitenkarte + Städte
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 19,
   attribution: '&copy; Esri, Earthstar Geographics'
@@ -22,10 +17,10 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// Marker-Speicher
+// Marker speichern
 let markers = [];
 
-// Datei-Upload
+// PDF-Upload
 document.getElementById('pdfInput').addEventListener('change', async (event) => {
   const file = event.target.files[0];
   if (!file) {
@@ -49,13 +44,13 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
     }
 
     if (text.trim().length < 20) {
-      alert("PDF konnte gelesen werden, enthält aber kaum Text. Ist es sicher ein digitaler Auftrag?");
+      alert("PDF enthält zu wenig Text. Ist es ein digitaler Auftrag?");
       return;
     }
 
-    // Lieferadresse + ZRD extrahieren
+    // Lieferadresse + ZRD
     const addressMatch = text.match(/Lieferadresse[:\s]*([A-Za-zÄÖÜäöüß0-9\s,.-]+)/);
-    const zrdMatch = text.match(/ZRD\s*\d+/i);
+    const zrdMatch = text.match(/ZRD\d+/i);
 
     if (!addressMatch) {
       alert("Keine Lieferadresse gefunden.");
@@ -66,7 +61,7 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
     const address = addressMatch[1].trim();
     const zrd = zrdMatch ? zrdMatch[0] : "Keine ZRD gefunden";
 
-    // Adresse in Koordinaten umwandeln
+    // Geokodierung via OpenStreetMap Nominatim
     const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Deutschland')}`);
     const data = await response.json();
 
@@ -132,8 +127,9 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
     popupDiv.appendChild(okButton);
     marker.bindPopup(popupDiv).openPopup();
     map.setView([lat, lon], 12);
+
   } catch (err) {
     console.error("PDF-Verarbeitungsfehler:", err);
-    alert("Fehler beim Verarbeiten der PDF. Safari blockiert möglicherweise PDF.js. Bitte Chrome oder PC probieren.");
+    alert("Fehler beim Verarbeiten der PDF. Safari blockiert möglicherweise PDF.js oder die Datei ist ungültig.");
   }
 });
