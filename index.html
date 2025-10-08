@@ -14,91 +14,79 @@
 <body>
 <h1>Offene Aufträge</h1>
 
-<input type="file" id="fileInput" />
+<input type="file" id="fileInput" accept=".xls,.xlsx,.xlsm,.csv" />
 <button id="loadBtn">Aufträge laden</button>
+
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
 
 <script>
 const map = L.map('map').setView([51.1657, 10.4515], 6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:19, attribution:'&copy; OpenStreetMap'
+}).addTo(map);
 
 document.getElementById('loadBtn').addEventListener('click', async () => {
   const file = document.getElementById('fileInput').files[0];
-  if(!file) { alert("Bitte zuerst eine Datei auswählen"); return; }
+  if(!file) { alert("Bitte zuerst eine Excel-Datei auswählen"); return; }
 
-  const ext = file.name.split('.').pop().toLowerCase();
+  console.log("Datei ausgewählt:", file.name);
 
-  let rows = [];
-
-  // === Excel / CSV ===
-  if(['xls','xlsx','xlsm','csv'].includes(ext)){
+  try {
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data,{type:'array'});
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    rows = XLSX.utils.sheet_to_json(sheet);
-  }
+    const rows = XLSX.utils.sheet_to_json(sheet);
 
-  // === PDF ===
-  else if(ext === 'pdf'){
-    const pdfData = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
-    for(let i=1; i<=pdf.numPages; i++){
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item=>item.str).join(' ');
-      // einfache Erkennung: Zeilen anhand von "ZRD" oder "Auftragsnummer"
-      const matches = pageText.match(/ZRD\d+\s.*?Auftragsnummer\s\d+/g);
-      if(matches) matches.forEach(line=>{
-        // rudimentäre Spaltenzuordnung
-        const zrdMatch = line.match(/ZRD\d+/);
-        const auftragMatch = line.match(/Auftragsnummer\s\d+/);
-        if(zrdMatch && auftragMatch){
-          rows.push({
-            ZRD: zrdMatch[0],
-            Auftragsnummer: auftragMatch[0].split(' ')[1],
-            Lieferadresse: 'Deutschland', // placeholder, PDF muss Adresse enthalten
-            Priorität: 'grün',
-            Grund: line
-          });
-        }
+    console.log("Geladene Zeilen:", rows.length);
+    if(rows.length === 0){ alert("Keine Daten in der Excel-Datei gefunden"); return; }
+
+    for(const row of rows){
+      if(!row.Lieferadresse){ console.warn("Zeile ohne Lieferadresse übersprungen:", row); continue; }
+
+      // Geokodierung via Nominatim
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(row.Lieferadresse+', Deutschland')}`);
+      const geoData = await geoRes.json();
+      if(!geoData.length){ console.warn("Adresse nicht gefunden:", row.Lieferadresse); continue; }
+      const {lat, lon, display_name} = geoData[0];
+
+      // Markerfarbe nach Priorität (rot, orange, grün)
+      let color = 'green';
+      if(row.Priorität) {
+        const p = row.Priorität.toLowerCase();
+        if(p.includes('rot')) color = 'red';
+        else if(p.includes('orange')) color = 'orange';
+      }
+
+      const icon = L.icon({
+        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+        shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+        iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34]
       });
+
+      const marker = L.marker([lat, lon], {icon}).addTo(map);
+
+      const popupHTML = `
+        <b>ZRD:</b> ${row.ZRD || '-'}<br>
+        <b>Auftragsnummer:</b> ${row.Auftragsnummer || '-'}<br>
+        <b>Lieferadresse:</b> ${display_name}<br>
+        <b>Kundenbeanstandung:</b> ${row.Kundenbeanstandung || '-'}<br>
+        <b>Grund:</b> ${row.Grund || '-'}<br>
+        <b>PLZ:</b> ${row.PLZ || '-'}<br>
+        <b>Eingangsdatum:</b> ${row.Eingangsdatum || '-'}<br>
+        <b>Priorität:</b> ${row.Priorität || '-'}<br>
+        <b>Ticketnummer:</b> ${row.Ticketnummer || '-'}<br>
+        <b>Besteller:</b> ${row.Besteller || '-'}<br>
+        <b>Telefon:</b> ${row.Telefon || '-'}<br>
+        <b>Mail:</b> ${row.Mail || '-'}
+      `;
+      marker.bindPopup(popupHTML);
     }
-  } 
-  else { alert("Dateiformat nicht unterstützt"); return; }
-
-  // === Marker setzen ===
-  for(const row of rows){
-    if(!row.Lieferadresse) continue;
-
-    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(row.Lieferadresse+', Deutschland')}`);
-    const geoData = await geoRes.json();
-    if(!geoData.length) continue;
-    const {lat, lon, display_name} = geoData[0];
-
-    const icon = L.icon({
-      iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${row.Priorität || 'green'}.png`,
-      shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-      iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34]
-    });
-
-    const marker = L.marker([lat,lon],{icon}).addTo(map);
-
-    const popupHTML = `
-      <b>ZRD:</b> ${row.ZRD || '-'}<br>
-      <b>Auftragsnummer:</b> ${row.Auftragsnummer || '-'}<br>
-      <b>Lieferadresse:</b> ${display_name}<br>
-      <b>Grund / Info:</b> ${row.Grund || '-'}<br>
-      <b>Priorität:</b> ${row.Priorität || '-'}<br>
-      <b>Ticketnummer:</b> ${row.Ticketnummer || '-'}<br>
-      <b>Besteller:</b> ${row.Besteller || '-'}<br>
-      <b>Telefon:</b> ${row.Telefon || '-'}<br>
-      <b>Mail:</b> ${row.Mail || '-'}
-    `;
-    marker.bindPopup(popupHTML);
+  } catch(err) {
+    console.error("Fehler beim Verarbeiten der Datei:", err);
+    alert("Fehler beim Verarbeiten der Datei. Prüfe die Konsole für Details.");
   }
 });
 </script>
