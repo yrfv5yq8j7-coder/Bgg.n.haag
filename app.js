@@ -1,30 +1,30 @@
-// Safari/iPad Fix: Worker deaktivieren
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js';
 pdfjsLib.disableWorker = true;
 
 // Leaflet-Karte
 const map = L.map('map').setView([51.1657, 10.4515], 6);
-
-// Satellitenkarte + Städte
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 19,
   attribution: '&copy; Esri, Earthstar Geographics'
 }).addTo(map);
-
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   opacity: 0.5,
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// Marker speichern
 let markers = [];
+let selectedFile = null;
 
-// PDF-Upload
-document.getElementById('pdfInput').addEventListener('change', async (event) => {
-  const file = event.target.files[0];
-  if (!file) {
-    alert("Bitte eine PDF auswählen!");
+// Datei auswählen
+document.getElementById('pdfInput').addEventListener('change', (e) => {
+  selectedFile = e.target.files[0];
+});
+
+// OK-Button klick → PDF verarbeiten
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+  if (!selectedFile) {
+    alert("Bitte zuerst eine PDF auswählen!");
     return;
   }
 
@@ -33,7 +33,7 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
   markers = [];
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
+    const arrayBuffer = await selectedFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
     let text = '';
@@ -48,20 +48,17 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
       return;
     }
 
-    // Lieferadresse + ZRD
     const addressMatch = text.match(/Lieferadresse[:\s]*([A-Za-zÄÖÜäöüß0-9\s,.-]+)/);
     const zrdMatch = text.match(/ZRD\d+/i);
 
     if (!addressMatch) {
       alert("Keine Lieferadresse gefunden.");
-      console.log("Textauszug:", text.slice(0, 500));
       return;
     }
 
     const address = addressMatch[1].trim();
     const zrd = zrdMatch ? zrdMatch[0] : "Keine ZRD gefunden";
 
-    // Geokodierung via OpenStreetMap Nominatim
     const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Deutschland')}`);
     const data = await response.json();
 
@@ -72,7 +69,6 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
 
     const { lat, lon, display_name } = data[0];
 
-    // Marker erstellen (Standard grün)
     const markerIcon = L.icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
@@ -84,7 +80,6 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
     const marker = L.marker([lat, lon], { icon: markerIcon }).addTo(map);
     markers.push(marker);
 
-    // Popup mit Eingabefeldern
     const popupDiv = document.createElement('div');
     popupDiv.innerHTML = `
       <b>Lieferadresse:</b><br>${display_name}<br><br>
@@ -103,9 +98,9 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
       </select><br><br>
     `;
 
-    const okButton = document.createElement('button');
-    okButton.textContent = "OK";
-    okButton.onclick = () => {
+    const okBtnMarker = document.createElement('button');
+    okBtnMarker.textContent = "OK";
+    okBtnMarker.onclick = () => {
       const prio = document.getElementById(`prio-${lat}`).value;
       const auftrag = document.getElementById(`auftrag-${lat}`).value;
       const ticket = document.getElementById(`ticket-${lat}`).value;
@@ -120,16 +115,16 @@ document.getElementById('pdfInput').addEventListener('change', async (event) => 
       });
       marker.setIcon(newIcon);
 
-      alert(`Auftrag gespeichert!\n\nZRD: ${zrd}\nAdresse: ${address}\nAuftragsnummer: ${auftrag}\nTicketnummer: ${ticket}\nGrund: ${grund}\nPriorität: ${prio}`);
+      alert(`Auftrag gespeichert!\nZRD: ${zrd}\nAuftragsnummer: ${auftrag}\nTicketnummer: ${ticket}\nGrund: ${grund}\nPriorität: ${prio}`);
       marker.closePopup();
     };
 
-    popupDiv.appendChild(okButton);
+    popupDiv.appendChild(okBtnMarker);
     marker.bindPopup(popupDiv).openPopup();
     map.setView([lat, lon], 12);
 
   } catch (err) {
     console.error("PDF-Verarbeitungsfehler:", err);
-    alert("Fehler beim Verarbeiten der PDF. Safari blockiert möglicherweise PDF.js oder die Datei ist ungültig.");
+    alert("Fehler beim Verarbeiten der PDF. Safari blockiert möglicherweise PDF.js oder Datei ungültig.");
   }
 });
