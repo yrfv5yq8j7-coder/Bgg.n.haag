@@ -6,15 +6,15 @@
 <title>Auftragskarte</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-#map { width: 95%; height: 80vh; margin: 10px auto; }
-body { font-family: Arial; text-align:center; }
-input, button { margin:5px; padding:6px; }
+  #map { width: 95%; height: 80vh; margin: 10px auto; }
+  body { font-family: Arial; text-align:center; }
+  input, button { margin:5px; padding:6px; }
 </style>
 </head>
 <body>
 <h1>Offene Aufträge Karte</h1>
 
-<input type="file" id="excelInput" accept=".xlsx,.xls" />
+<input type="file" id="excelInput" accept=".xlsx,.xlsm,.xls" />
 <button id="loadBtn">Aufträge laden</button>
 
 <div id="map"></div>
@@ -24,7 +24,9 @@ input, button { margin:5px; padding:6px; }
 
 <script>
 const map = L.map('map').setView([51.1657, 10.4515], 6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:19, attribution:'&copy; OpenStreetMap'
+}).addTo(map);
 
 document.getElementById('loadBtn').addEventListener('click', async () => {
   const file = document.getElementById('excelInput').files[0];
@@ -44,7 +46,7 @@ document.getElementById('loadBtn').addEventListener('click', async () => {
     if(!geoData.length) continue;
     const {lat, lon, display_name} = geoData[0];
 
-    // Markerfarbe nach Priorität
+    // Markerfarbe nach Priorität (grün, orange, rot)
     const icon = L.icon({
       iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${row.Priorität || 'green'}.png`,
       shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
@@ -53,18 +55,19 @@ document.getElementById('loadBtn').addEventListener('click', async () => {
 
     const marker = L.marker([lat,lon],{icon}).addTo(map);
 
+    // Popup mit allen relevanten Informationen
     const popupHTML = `
-      <b>Auftragsnummer:</b> ${row.Auftragsnummer}<br>
+      <b>Auftragsnummer:</b> ${row.Auftragsnummer || '-'}<br>
       <b>Lieferadresse:</b> ${display_name}<br>
-      <b>Kundenbeanstandung:</b> ${row.Kundenbeanstandung}<br>
-      <b>Grund:</b> ${row.Grund}<br>
-      <b>PLZ:</b> ${row.PLZ}<br>
-      <b>Eingangsdatum:</b> ${row.Eingangsdatum}<br>
-      <b>Priorität:</b> ${row.Priorität}<br>
-      <b>Ticketnummer:</b> ${row.Ticketnummer}<br>
-      <b>Besteller:</b> ${row.Besteller}<br>
-      <b>Telefon:</b> ${row.Telefon}<br>
-      <b>Mail:</b> ${row.Mail}
+      <b>Kundenbeanstandung:</b> ${row.Kundenbeanstandung || '-'}<br>
+      <b>Grund:</b> ${row.Grund || '-'}<br>
+      <b>PLZ:</b> ${row.PLZ || '-'}<br>
+      <b>Eingangsdatum:</b> ${row.Eingangsdatum || '-'}<br>
+      <b>Priorität:</b> ${row.Priorität || '-'}<br>
+      <b>Ticketnummer:</b> ${row.Ticketnummer || '-'}<br>
+      <b>Besteller:</b> ${row.Besteller || '-'}<br>
+      <b>Telefon:</b> ${row.Telefon || '-'}<br>
+      <b>Mail:</b> ${row.Mail || '-'}
     `;
     marker.bindPopup(popupHTML);
   }
