@@ -12,41 +12,73 @@
 </style>
 </head>
 <body>
-<h1>Offene Aufträge Karte</h1>
+<h1>Offene Aufträge</h1>
 
-<input type="file" id="excelInput" accept=".xlsx,.xlsm,.xls" />
+<input type="file" id="fileInput" />
 <button id="loadBtn">Aufträge laden</button>
-
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
 
 <script>
 const map = L.map('map').setView([51.1657, 10.4515], 6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom:19, attribution:'&copy; OpenStreetMap'
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(map);
 
 document.getElementById('loadBtn').addEventListener('click', async () => {
-  const file = document.getElementById('excelInput').files[0];
-  if(!file) { alert("Bitte zuerst eine Excel-Datei auswählen"); return; }
+  const file = document.getElementById('fileInput').files[0];
+  if(!file) { alert("Bitte zuerst eine Datei auswählen"); return; }
 
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data,{type:'array'});
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet);
+  const ext = file.name.split('.').pop().toLowerCase();
 
+  let rows = [];
+
+  // === Excel / CSV ===
+  if(['xls','xlsx','xlsm','csv'].includes(ext)){
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data,{type:'array'});
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(sheet);
+  }
+
+  // === PDF ===
+  else if(ext === 'pdf'){
+    const pdfData = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+    for(let i=1; i<=pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item=>item.str).join(' ');
+      // einfache Erkennung: Zeilen anhand von "ZRD" oder "Auftragsnummer"
+      const matches = pageText.match(/ZRD\d+\s.*?Auftragsnummer\s\d+/g);
+      if(matches) matches.forEach(line=>{
+        // rudimentäre Spaltenzuordnung
+        const zrdMatch = line.match(/ZRD\d+/);
+        const auftragMatch = line.match(/Auftragsnummer\s\d+/);
+        if(zrdMatch && auftragMatch){
+          rows.push({
+            ZRD: zrdMatch[0],
+            Auftragsnummer: auftragMatch[0].split(' ')[1],
+            Lieferadresse: 'Deutschland', // placeholder, PDF muss Adresse enthalten
+            Priorität: 'grün',
+            Grund: line
+          });
+        }
+      });
+    }
+  } 
+  else { alert("Dateiformat nicht unterstützt"); return; }
+
+  // === Marker setzen ===
   for(const row of rows){
     if(!row.Lieferadresse) continue;
 
-    // Geokodierung via Nominatim
     const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(row.Lieferadresse+', Deutschland')}`);
     const geoData = await geoRes.json();
     if(!geoData.length) continue;
     const {lat, lon, display_name} = geoData[0];
 
-    // Markerfarbe nach Priorität (grün, orange, rot)
     const icon = L.icon({
       iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${row.Priorität || 'green'}.png`,
       shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
@@ -55,14 +87,11 @@ document.getElementById('loadBtn').addEventListener('click', async () => {
 
     const marker = L.marker([lat,lon],{icon}).addTo(map);
 
-    // Popup mit allen relevanten Informationen
     const popupHTML = `
+      <b>ZRD:</b> ${row.ZRD || '-'}<br>
       <b>Auftragsnummer:</b> ${row.Auftragsnummer || '-'}<br>
       <b>Lieferadresse:</b> ${display_name}<br>
-      <b>Kundenbeanstandung:</b> ${row.Kundenbeanstandung || '-'}<br>
-      <b>Grund:</b> ${row.Grund || '-'}<br>
-      <b>PLZ:</b> ${row.PLZ || '-'}<br>
-      <b>Eingangsdatum:</b> ${row.Eingangsdatum || '-'}<br>
+      <b>Grund / Info:</b> ${row.Grund || '-'}<br>
       <b>Priorität:</b> ${row.Priorität || '-'}<br>
       <b>Ticketnummer:</b> ${row.Ticketnummer || '-'}<br>
       <b>Besteller:</b> ${row.Besteller || '-'}<br>
