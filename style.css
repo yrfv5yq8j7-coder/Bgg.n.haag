@@ -1,47 +1,44 @@
 body {
   font-family: Arial, sans-serif;
-  text-align: center;
-  background-color: #f8f9fa;
   margin: 0;
   padding: 0;
+  text-align: center;
+  background-color: #f5f5f5;
 }
 
 h1 {
-  margin-top: 20px;
-  color: #333;
+  background: #2a72d4;
+  color: white;
+  padding: 12px;
+  margin: 0 0 10px;
 }
 
 #upload-section {
-  margin: 10px 0;
+  margin: 10px;
 }
 
 #map {
   width: 95%;
-  height: 600px;
+  height: 80vh; /* GANZ WICHTIG */
   margin: 10px auto;
   border: 2px solid #ccc;
   border-radius: 8px;
 }
 
-/* Popup Inputs/Buttons */
-.leaflet-popup-content input,
-.leaflet-popup-content textarea,
-.leaflet-popup-content select {
-  width: 90%;
-  margin-bottom: 8px;
-  padding: 4px;
+input, button {
+  font-size: 16px;
+  padding: 6px;
+  margin: 5px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
 }
 
-.leaflet-popup-content button {
-  padding: 6px 12px;
-  margin-top: 5px;
-  background-color: #007bff;
+button {
+  background-color: #2a72d4;
   color: white;
-  border: none;
-  border-radius: 4px;
   cursor: pointer;
 }
 
-.leaflet-popup-content button:hover {
-  background-color: #0056b3;
+button:hover {
+  background-color: #1e5cb8;
 }
