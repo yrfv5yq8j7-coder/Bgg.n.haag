@@ -4,7 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Offene Aufträge – Deutschlandkarte</title>
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -56,26 +60,16 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
   <script>
-    // --- 1️⃣ Karte immer zuerst laden ---
+    // Karte initialisieren
     const map = L.map('map').setView([51.1657, 10.4515], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap-Mitwirkende'
     }).addTo(map);
 
-    // --- 2️⃣ PDF.js nur dynamisch laden, wenn nötig ---
-    async function loadPDFLib() {
-      if (window.pdfjsLib) return window.pdfjsLib;
-      return new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = "https://unpkg.com/pdfjs-dist/build/pdf.min.js";
-        s.onload = () => resolve(window.pdfjsLib);
-        s.onerror = () => reject(new Error("PDF.js konnte nicht geladen werden"));
-        document.body.appendChild(s);
-      });
-    }
+    // PDF.js konfigurieren
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
-    // --- 3️⃣ Hochlade-Logik ---
     document.getElementById("uploadBtn").addEventListener("click", async () => {
       const fileInput = document.getElementById("pdfInput");
       const file = fileInput.files[0];
@@ -85,13 +79,10 @@
       }
 
       try {
-        const pdfjsLib = await loadPDFLib();
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js";
-
         const buffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-
         let text = "";
+
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const content = await page.getTextContent();
