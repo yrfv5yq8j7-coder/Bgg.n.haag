@@ -49,10 +49,12 @@ header h1 { margin: 0; font-size: 18px; }
 
 main { flex: 1; display: block; }
 #map {
-  width: 100%;
-  height: calc(100vh - 62px); /* header height */
+  width: 95%;
+  height: 600px;
+  margin: 10px auto;
+  border: 2px solid #ccc;
+  border-radius: 8px;
 }
-
 /* Popup form styling */
 .popup-field { margin: 6px 0; font-size: 13px; }
 .popup-field input[type="text"], .popup-field select {
