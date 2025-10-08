@@ -1,38 +1,33 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Offene Aufträge — Lieferkarte</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offene Aufträge – Lieferkarte Deutschland</title>
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-  <!-- eigenes CSS -->
-  <link rel="stylesheet" href="style.css"/>
+  <!-- Eigene Styles -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Offene Aufträge</h1>
-    <div class="controls">
-      <label class="file-label">
-        Datei auswählen
-        <input type="file" id="pdfInput" accept="application/pdf" />
-      </label>
-      <button id="infoBtn" title="Hinweis">ℹ️</button>
-      <button id="clearBtn" title="Alle Punkte löschen">🗑️ Alle löschen</button>
-    </div>
-  </header>
+  <h1>Offene Aufträge</h1>
+  <p>Lade hier deinen digitalen Auftrag (PDF) hoch. Die Lieferadresse und ZRD werden automatisch erkannt und auf der Karte angezeigt.</p>
 
-  <main>
-    <div id="map"></div>
-  </main>
+  <div id="upload-section">
+    <input type="file" id="pdfInput" accept="application/pdf" />
+  </div>
+
+  <div id="map"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <!-- pdf.js -->
+
+  <!-- PDF.js -->
   <script src="https://unpkg.com/pdfjs-dist/build/pdf.min.js"></script>
-  <!-- App -->
+
+  <!-- Eigene Logik -->
   <script src="app.js"></script>
 </body>
 </html>
